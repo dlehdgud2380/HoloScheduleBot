@@ -12,15 +12,16 @@ PATH = os.getcwd()
 os.chdir(f"{Path(PATH)}/etc")
 
 # input twitter bearer token for access to twitter api
-with open ("api_access.json", "r") as token_file:
+with open("api_access.json", "r") as token_file:
     access_token_list: Dict = json.load(token_file)
 
 # GET bearer token for access to twitter api
-bearer_token: str = access_token_list['BEARER_TOKEN'] 
+bearer_token: str = access_token_list['BEARER_TOKEN']
 
-# GET HoloEN
-user_list: List[str] = ['watsonameliaEN', 'moricalliope', 'gawrgura', 'takanashikiara',
-                    'irys_en', 'ceresfauna', 'ourokronii', 'nanashimumei_en', 'hakosbaelz']
+# HoloEN MetaData Setup for Get Twitter ID
+user_list: List[str] = ['watsonameliaEN', 'moricalliope', 'gawrgura',
+                        'takanashikiara', 'irys_en', 'ceresfauna',
+                        'ourokronii', 'nanashimumei_en', 'hakosbaelz']
 BASEURL: str = "https://api.twitter.com/2/users/by/username/"
 headers: Dict = {
     'Authorization': f'Bearer {bearer_token}'
@@ -32,8 +33,8 @@ for user in user_list:
     response = requests.get(BASEURL + user, headers=headers).content
     data = dict(json.loads(response))['data']
     holoen_info[data['username']] = data['id']
-    
+
 # Write using json and export to project etc directory
-with open ("vtuber_id_list.json", 'w') as json_file:
+with open("vtuber_id_list.json", 'w') as json_file:
     json_file.write(json.dumps(holoen_info, indent=4))
     json_file.close()
