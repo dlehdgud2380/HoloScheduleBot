@@ -1,48 +1,66 @@
-from typing import Dict, List
-import os
-from pathlib import Path
+from typing import Any, Dict, List, Union
+from xmlrpc.client import ResponseError
 import requests
 import json
+import re
+import logging
 
-def setup_holoen_vtuber_id() -> None:
+# input twitter bearer token for access to twitter api
+with open('etc/api_access.json', 'r') as token_file:
+    access_token_list: Dict = json.load(token_file)
 
-    # Path Setup
-    PATH = os.getcwd()
-    os.chdir(f"{Path(PATH)}/etc")
+# GET bearer token for access to twitter api
+BEARER_TOKEN: str = access_token_list['BEARER_TOKEN']
 
-    # input twitter bearer token for access to twitter api
-    with open("api_access.json", "r") as token_file:
-        access_token_list: Dict = json.load(token_file)
+# HoloEN MetaData Setup for Get Twitter ID
+USER_LIST: List[str] = ['watsonameliaEN', 'moricalliope', 'gawrgura',
+                        'takanashikiara', 'irys_en', 'ceresfauna',
+                        'ninomaeinanis', 'ourokronii', 'nanashimumei_en',
+                        'hakosbaelz']
 
-    # GET bearer token for access to twitter api
-    bearer_token: str = access_token_list['BEARER_TOKEN']
+payload = {'key1': 'value1', 'key2': ['value2', 'value3']}
+r = requests.get('https://httpbin.org/get', params=payload)
 
-    # HoloEN MetaData Setup for Get Twitter ID
-    user_list: List[str] = ['watsonameliaEN', 'moricalliope', 'gawrgura',
-                            'takanashikiara', 'irys_en', 'ceresfauna',
-                            'ourokronii', 'nanashimumei_en', 'hakosbaelz']
-    BASEURL: str = "https://api.twitter.com/2/users/by/username/"
-    headers: Dict = {
-        'Authorization': f'Bearer {bearer_token}'
+
+def twitter_timeline_search():
+    BASEURL: str = 'https://api.twitter.com/2/tweets/search/recent'
+    query_params: Dict = {
+        'media.fields': 'url',
+        'expansions': 'attachments.media_keys',
+        'query': ''
+    }
+    HEADERS: Dict = {
+        'Authorization': f'Bearer {BEARER_TOKEN}'
     }
 
-    # Get Vtuber twitter id
-    holoen_info: Dict = {}
-    for user in user_list:
-        response = requests.get(BASEURL + user, headers=headers).content
-        data = dict(json.loads(response))['data']
-        holoen_info[data['username']] = data['id']
+    for vtuber in USER_LIST:
+        query_params['query'] = f'(has:images -is:retweet from: {vtuber}) schedule'
+        response = requests.get(
+            url=BASEURL,
+            headers=HEADERS,
+            params=query_params
+        )
 
-    # Write using json and export to project etc directory
-    with open("vtuber_id_list.json", 'w') as json_file:
-        json_file.write(json.dumps(holoen_info, indent=4))
-        json_file.close()
-        
-    os.chdir(PATH)
+        res_json: Dict = json.loads(response.content)
+
+        # GET TweetUrl
+        pattern = re.compile('(http(s)?:\/\/)([a-z0-9\w]+\.*)+[a-z0-9]{2,4}\/([a-z0-9\w]+\.*)')
+        data: Union(
+            None, Dict) = None if res_json is None else res_json.get('data')
+        text: Union(None, str) = None if data is None else data[0].get('text')
+        tweet_url = None if text is None else pattern.search(text).group()
+
+        # GET Schedule Image Url
+        includes: Union(None, Dict) = None if res_json is None else res_json.get('includes')
+        media: Union(None, Dict) = None if includes is None else includes.get('media')
+        media_url: Union(None, str) = None if media is None else media[0].get('url')
+
+        print(f'[{vtuber}] \nmedia -> {media_url}\ntweetURL: {tweet_url}\n')
+
 
 def twitter_image_download():
     pass
 
 
-def twitter_timeline_search():
-    pass
+if __name__ == '__main__':
+    twitter_timeline_search()
