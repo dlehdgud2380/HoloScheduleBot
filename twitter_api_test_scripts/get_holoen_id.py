@@ -5,11 +5,14 @@ import requests
 import json
 
 # result message for data extract result
+
+
 class ResultMessage:
     def __init__(self, code=None, message=None):
         self.code = code
         self.message = message
-        
+
+
 result_message: object = None
 
 # Path Setup
@@ -25,7 +28,8 @@ bearer_token: str = access_token_list['BEARER_TOKEN']
 
 # HoloEN MetaData Setup for Get Twitter ID
 user_list: List[str] = ['watsonameliaEN', 'moricalliope', 'gawrgura',
-                        'takanashikiara', 'irys_en', 'ceresfauna',
+                        'takanashikiara', 'ninomaeinanis',
+                        'irys_en', 'ceresfauna',
                         'ourokronii', 'nanashimumei_en', 'hakosbaelz']
 BASEURL: str = "https://api.twitter.com/2/users/by/username/"
 headers: Dict = {
@@ -38,10 +42,12 @@ for user in user_list:
     try:
         response = requests.get(BASEURL + user, headers=headers)
         if response.status_code != 200:
-            result_message = ResultMessage(response.status_code, response.reason)
+            result_message = ResultMessage(
+                response.status_code, response.reason)
             break
         else:
-            result_message = ResultMessage(response.status_code, response.reason)
+            result_message = ResultMessage(
+                response.status_code, response.reason)
             data = dict(json.loads(response.content))['data']
             holoen_info[data['username']] = data['id']
     except requests.ConnectionError or requests.ConnectTimeout as error:
