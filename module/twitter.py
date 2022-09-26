@@ -1,12 +1,20 @@
-from typing import Any, Dict, List, Union
-from xmlrpc.client import ResponseError
 import requests
+
+from typing import Any, Dict, List, Union
+from datetime import date
 import json
 import re
-import logging
+import os
+
+# Path Setup
+PATH = os.getcwd()
+if 'requirements.txt' not in os.listdir():
+    os.chdir("..")
+
+os.chdir(f"{os.getcwd()}/etc")
 
 # input twitter bearer token for access to twitter api
-with open('etc/api_access.json', 'r') as token_file:
+with open('api_access.json', 'r') as token_file:
     access_token_list: Dict = json.load(token_file)
 
 # GET bearer token for access to twitter api
@@ -18,13 +26,16 @@ USER_LIST: List[str] = ['watsonameliaEN', 'moricalliope', 'gawrgura',
                         'ninomaeinanis', 'ourokronii', 'nanashimumei_en',
                         'hakosbaelz']
 
-payload = {'key1': 'value1', 'key2': ['value2', 'value3']}
-r = requests.get('https://httpbin.org/get', params=payload)
+# make schedule image directory
+if 'images' not in os.listdir():
+    for vtuber in USER_LIST:
+        os.makedirs(f'images/{vtuber}')
 
 
-def twitter_timeline_search():
+def timeline_search() -> Dict:
     BASEURL: str = 'https://api.twitter.com/2/tweets/search/recent'
     query_params: Dict = {
+        'tweet.fields': 'created_at',
         'media.fields': 'url',
         'expansions': 'attachments.media_keys',
         'query': ''
@@ -32,6 +43,8 @@ def twitter_timeline_search():
     HEADERS: Dict = {
         'Authorization': f'Bearer {BEARER_TOKEN}'
     }
+
+    result: Dict = {}
 
     for vtuber in USER_LIST:
         query_params['query'] = f'(has:images -is:retweet from: {vtuber}) schedule'
@@ -44,23 +57,39 @@ def twitter_timeline_search():
         res_json: Dict = json.loads(response.content)
 
         # GET TweetUrl
-        pattern = re.compile('(http(s)?:\/\/)([a-z0-9\w]+\.*)+[a-z0-9]{2,4}\/([a-z0-9\w]+\.*)')
-        data: Union(
-            None, Dict) = None if res_json is None else res_json.get('data')
+        pattern = re.compile(r'((https:\/\/)(t.co)\/(\w)*)')
+        data: Union(None, Dict) = None if res_json is None else res_json.get('data')
         text: Union(None, str) = None if data is None else data[0].get('text')
-        tweet_url = None if text is None else pattern.search(text).group()
+        tweet_url: Union(None, str) = None if text is None else pattern.findall(text)[-1][0]
+        created_date: Union(None, str) = None if data is None else data[0].get('created_at')
 
         # GET Schedule Image Url
         includes: Union(None, Dict) = None if res_json is None else res_json.get('includes')
         media: Union(None, Dict) = None if includes is None else includes.get('media')
         media_url: Union(None, str) = None if media is None else media[0].get('url')
 
-        print(f'[{vtuber}] \nmedia -> {media_url}\ntweetURL: {tweet_url}\n')
+        # print(f'[{vtuber}] \nmedia -> {media_url}\ntweetURL: {tweet_url}\n')
+        if created_date is not None:
+            result[f'{vtuber}'] = {
+                'name': vtuber,
+                'date': created_date,
+                'media_url': media_url,
+                'tweet_url': tweet_url
+            }
+
+    return result
 
 
-def twitter_image_download():
-    pass
+def image_download():
+    vtuber: str = None
+    image_url: str = None
+    response = requests.get(image_url)
+    open(f"{vtuber}.jpg", "wb").write(response.content)
 
 
-if __name__ == '__main__':
-    twitter_timeline_search()
+def upload_to_bot():
+    return
+
+
+if __name__ == "__main__":
+    timeline_search()
