@@ -368,5 +368,6 @@ instance/*
 # End of https://www.toptal.com/developers/gitignore/api/python,flask,django,visualstudiocode
 
 # json file
-etc/vtuber_id_list.json
+key/vtuber_id_list.json
+key/twitter.json
 apidoc.txt
