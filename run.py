@@ -5,7 +5,7 @@ from module import twitter
 # holoEN vtuber id json file Setup
 twitter.setup_holoen_vtuber_id()
 
-# port mapping for uvicron
+# port mapping for uvicorn
 PORT: int = int(argv[1]) if len(argv) > 1 else None
 
 # launch command for uvicorn
