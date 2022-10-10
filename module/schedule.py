@@ -33,10 +33,10 @@ if 'images' not in os.listdir():
         os.makedirs(f'images/{vtuber}')
 
 class Schedule:
-    
+
     def __init__(self):
-        
-    
+        pass
+
     def timeline_search(self) -> Dict:
         BASEURL: str = 'https://api.twitter.com/2/tweets/search/recent'
         query_params: Dict = {
@@ -90,7 +90,7 @@ class Schedule:
         image_url: str = None
         response = requests.get(image_url)
         open(f"{vtuber}.jpg", "wb").write(response.content)
-        
+
     def __repr__(self):
         pass
 
