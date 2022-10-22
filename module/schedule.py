@@ -1,8 +1,7 @@
 import requests
 
 from typing import Any, Dict, List, Union
-from datetime import date
-from util import logger
+from datetime import datetime
 import json
 import re
 import os
@@ -18,13 +17,21 @@ with open('twitter.json', 'r') as token_file:
     access_token_list: Dict = json.load(token_file)
 
 # GET bearer token for access to twitter api
-BEARER_TOKEN: str = access_token_list['BEARER_TOKEN']
+BEARER_TOKEN: str = access_token_list['bearer_token']
 
 # HoloEN MetaData Setup for Get Twitter ID
-USER_LIST: List[str] = ['watsonameliaEN', 'moricalliope', 'gawrgura',
-                        'takanashikiara', 'irys_en', 'ceresfauna',
-                        'ninomaeinanis', 'ourokronii', 'nanashimumei_en',
-                        'hakosbaelz']
+USER_LIST: List[str] = [
+        'watsonameliaEN',
+        'moricalliope',
+        'gawrgura',
+        'takanashikiara',
+        'irys_en',
+        'ceresfauna',
+        'ninomaeinanis',
+        'ourokronii',
+        'nanashimumei_en',
+        'hakosbaelz',
+    ]
 
 # make schedule image directory
 os.chdir("..")
@@ -35,7 +42,9 @@ if 'images' not in os.listdir():
 class Schedule:
 
     def __init__(self):
-        pass
+        self.holoen_schedule: Dict = self.timeline_search()
+        for schedule in self.holoen_schedule.values():
+            self.image_download(schedule)
 
     def timeline_search(self) -> Dict:
         BASEURL: str = 'https://api.twitter.com/2/tweets/search/recent'
@@ -67,14 +76,16 @@ class Schedule:
             text: Union(None, str) = None if data is None else data[0].get('text')
             tweet_url: Union(None, str) = None if text is None else pattern.findall(text)[-1][0]
             created_date: Union(None, str) = None if data is None else data[0].get('created_at')
+            
 
             # GET Schedule Image Url
             includes: Union(None, Dict) = None if res_json is None else res_json.get('includes')
             media: Union(None, Dict) = None if includes is None else includes.get('media')
             media_url: Union(None, str) = None if media is None else media[0].get('url')
 
-            # print(f'[{vtuber}] \nmedia -> {media_url}\ntweetURL: {tweet_url}\n')
             if created_date is not None:
+                created_date: datetime = datetime.strptime(created_date[0:19], '%Y-%m-%dT%H:%M:%S')
+                created_date = created_date.date().isoformat()
                 result[f'{vtuber}'] = {
                     'name': vtuber,
                     'date': created_date,
@@ -85,16 +96,19 @@ class Schedule:
         return result
 
 
-    def image_download(self, schedule_list) -> None:
-        vtuber: str = None
-        image_url: str = None
+    def image_download(self, vtuber_schedule) -> None:
+        vtuber: str = vtuber_schedule['name']
+        image_url: str = vtuber_schedule['media_url']
+        date: str = vtuber_schedule['date']
         response = requests.get(image_url)
-        open(f"{vtuber}.jpg", "wb").write(response.content)
+        image_file = open(f"images/{vtuber}/{date}.jpg", "wb")
+        image_file.write(response.content)
+        image_file.close()
 
     def __repr__(self):
-        pass
+        return json.dumps(self.holoen_schedule, indent=4, ensure_ascii=True)
 
 
 if __name__ == "__main__":
-    schedule = timeline_search()
+    schedule = Schedule()
     print(schedule)
