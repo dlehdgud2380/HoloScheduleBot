@@ -371,3 +371,6 @@ instance/*
 key/twitter.json
 key/telegram.json
 key/discord.json
+
+# image
+/images*
